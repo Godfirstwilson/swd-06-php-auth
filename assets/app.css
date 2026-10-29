@@ -216,12 +216,63 @@ a:hover {
 
 .actions {
     display: flex;
+    align-items: center;
     gap: 14px;
     white-space: nowrap;
 }
 
+.delete-form {
+    display: inline;
+    margin: 0;
+}
+
+.delete-form button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #c03945;
+    cursor: pointer;
+    font: inherit;
+}
+
+.delete-form button:hover {
+    text-decoration: underline;
+}
+
 .action-delete {
     color: #c03945;
+}
+
+.detail-list {
+    margin: 0;
+    padding: 4px 24px;
+}
+
+.detail-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) 3fr;
+    gap: 20px;
+    padding: 18px 0;
+    border-bottom: 1px solid #edf0f5;
+}
+
+.detail-row:last-child {
+    border-bottom: 0;
+}
+
+.detail-row dt {
+    color: #68738a;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.detail-row dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.back-link {
+    margin: 20px 0 0;
 }
 
 .empty-state {
@@ -297,6 +348,11 @@ a:hover {
     .form-grid {
         grid-template-columns: 1fr;
         gap: 16px;
+    }
+
+    .detail-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
     }
 
     .student-table th,

@@ -4,6 +4,7 @@ require_once __DIR__ . '/src/helpers.php';
 require_once __DIR__ . '/src/Database.php';
 
 $pageTitle = 'Students';
+$csrfToken = csrfToken();
 $databaseUnavailable = false;
 
 try {
@@ -58,15 +59,24 @@ require __DIR__ . '/partials/header.php';
                         <?php foreach ($students as $student): ?>
                             <tr>
                                 <td class="student-name">
-                                    <?= e($student['first_name']) ?> <?= e($student['last_name']) ?>
+                                    <a href="show.php?id=<?= (int) $student['id'] ?>">
+                                        <?= e($student['first_name']) ?> <?= e($student['last_name']) ?>
+                                    </a>
                                 </td>
                                 <td><?= e($student['email']) ?></td>
                                 <td><?= e($student['course']) ?></td>
                                 <td><?= e((new DateTimeImmutable($student['enrolled_on']))->format('d M Y')) ?></td>
                                 <td>
                                     <div class="actions">
+                                        <a href="show.php?id=<?= (int) $student['id'] ?>">View</a>
                                         <a href="edit.php?id=<?= (int) $student['id'] ?>">Edit</a>
-                                        <a class="action-delete" href="delete.php?id=<?= (int) $student['id'] ?>">Delete</a>
+                                        <form class="delete-form" action="delete.php" method="post"
+                                              data-confirm="<?= e('Delete ' . $student['first_name'] . ' ' . $student['last_name'] . '?') ?>"
+                                              onsubmit="return confirm(this.dataset.confirm)">
+                                            <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
+                                            <input type="hidden" name="id" value="<?= (int) $student['id'] ?>">
+                                            <button class="action-delete" type="submit">Delete</button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

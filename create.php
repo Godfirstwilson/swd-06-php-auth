@@ -22,22 +22,15 @@ $submitLabel = 'Add student';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($student as $field => $default) {
         $value = $_POST[$field] ?? $default;
-        $student[$field] = is_string($value) ? trim($value) : '';
+        $student[$field] = is_string($value)
+            ? ($field === 'course' ? $value : trim($value))
+            : '';
     }
 }
 
 try {
     $pdo = db();
-    $courseStatement = $pdo->query(
-        "SELECT COLUMN_TYPE
-         FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = DATABASE()
-           AND TABLE_NAME = 'students'
-           AND COLUMN_NAME = 'course'
-         LIMIT 1"
-    );
-    $columnType = $courseStatement->fetchColumn();
-    $courses = is_string($columnType) ? enumValues($columnType) : [];
+    $courses = studentCourses($pdo);
 
     if ($courses === []) {
         $databaseUnavailable = true;
@@ -54,49 +47,10 @@ if (!$databaseUnavailable && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!is_string($submittedToken) || !hash_equals($csrfToken, $submittedToken)) {
         $errors['form'] = 'Your form session expired. Please try again.';
     } else {
-        $namePattern = '/^(?=.*\p{L})[\p{L} -]{2,60}$/u';
-
-        foreach (['first_name', 'last_name'] as $field) {
-            if (!preg_match($namePattern, $student[$field])) {
-                $errors[$field] = 'Enter 2–60 characters using letters, spaces, or hyphens.';
-            }
-        }
-
-        if (!filter_var($student['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = 'Enter a valid email address.';
-        }
-
-        if ($student['phone'] !== '' && !preg_match('/\A0[789][01]\d{8}\z/', $student['phone'])) {
-            $errors['phone'] = 'Enter a valid 11-digit phone number or leave this blank.';
-        }
-
-        if (!in_array($student['course'], $courses, true)) {
-            $errors['course'] = 'Select one of the available courses.';
-        }
-
-        $enrolledDate = DateTimeImmutable::createFromFormat('!Y-m-d', $student['enrolled_on']);
-        $dateErrors = DateTimeImmutable::getLastErrors();
-        $validDate = $enrolledDate !== false
-            && $enrolledDate->format('Y-m-d') === $student['enrolled_on']
-            && ($dateErrors === false || ($dateErrors['warning_count'] === 0 && $dateErrors['error_count'] === 0));
-
-        if (!$validDate || $enrolledDate > new DateTimeImmutable('today')) {
-            $errors['enrolled_on'] = 'Enter a valid enrollment date that is not in the future.';
-        }
-
-        if (!isset($errors['email'])) {
-            try {
-                $emailStatement = $pdo->prepare(
-                    'SELECT id FROM students WHERE email = :email LIMIT 1'
-                );
-                $emailStatement->execute(['email' => $student['email']]);
-
-                if ($emailStatement->fetchColumn() !== false) {
-                    $errors['email'] = 'This email address is already in use.';
-                }
-            } catch (PDOException $exception) {
-                $errors['form'] = 'We could not validate the email address. Please try again.';
-            }
+        try {
+            $errors = validateStudent($pdo, $student, $courses);
+        } catch (PDOException $exception) {
+            $errors['form'] = 'We could not validate the student details. Please try again.';
         }
 
         if ($errors === []) {
